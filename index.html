@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GIORNO 季節メニュー メーカー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Pinyon+Script&family=Shippori+Mincho:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4f2ee; --panel:#ffffff; --line:#e3ded5; --ink:#1a1a1a;
+    --muted:#8a8378; --accent:#b89b5e; --accent-d:#9c8146; --danger:#c05a4a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:"Shippori Mincho",-apple-system,"Hiragino Mincho ProN",serif;
+       background:var(--bg);color:var(--ink);display:flex;flex-direction:column;height:100vh;overflow:hidden}
+  button{font-family:inherit;cursor:pointer;border:1px solid var(--line);background:#fff;
+         border-radius:8px;padding:6px 12px;font-size:13px;color:var(--ink);transition:.12s}
+  button:hover{border-color:var(--accent);color:var(--accent-d)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.primary:hover{background:var(--accent-d);color:#fff}
+  button.mini{padding:2px 7px;font-size:12px;border-radius:6px;line-height:1.4}
+  button.danger{color:var(--danger);border-color:#e9cfc9}
+  button:disabled{opacity:.4;cursor:default}
+  button:disabled:hover{border-color:var(--line);color:var(--ink)}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .collabel{font-size:12px;color:var(--accent-d);letter-spacing:.08em;margin:10px 2px 6px;font-weight:600}
+  .rangerow{display:flex;align-items:center;gap:8px;margin:6px 0}
+  .rangerow .rv{font-size:11px;color:var(--muted);min-width:38px;text-align:right}
+  input,select,textarea{font-family:inherit;font-size:13px;border:1px solid var(--line);
+         border-radius:7px;padding:6px 8px;background:#fff;color:var(--ink);width:100%}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+  textarea{resize:vertical;min-height:38px;line-height:1.5}
+
+  /* ---------- top bar ---------- */
+  .topbar{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--panel);
+          border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .brand{font-family:"Cormorant Garamond",serif;font-weight:600;font-size:20px;letter-spacing:.06em}
+  .brand small{font-size:11px;color:var(--muted);letter-spacing:.2em;margin-left:6px;font-family:"Shippori Mincho"}
+  .topbar .spacer{flex:1}
+  .storebox{display:flex;align-items:center;gap:6px}
+  .storebox select{width:auto;min-width:140px;font-size:14px}
+  .save-flag{font-size:11px;color:var(--muted)}
+
+  /* ---------- main split ---------- */
+  .main{flex:1;display:flex;min-height:0}
+  .editor{width:430px;min-width:360px;max-width:46%;overflow-y:auto;padding:16px;
+          border-right:1px solid var(--line);background:var(--panel)}
+  .preview-wrap{flex:1;overflow:auto;background:#dcd8d0;padding:26px;display:flex;
+                flex-direction:column;align-items:center;gap:26px}
+
+  /* editor cards */
+  .sec{margin-bottom:18px}
+  .sec-h{display:flex;align-items:center;gap:8px;margin:4px 0 10px}
+  .sec-h h3{margin:0;font-size:14px;letter-spacing:.04em}
+  .sec-h .ln{flex:1;height:1px;background:var(--line)}
+  .row{display:flex;gap:8px;margin-bottom:8px}
+  .row .f{flex:1}
+  .lbl{font-size:11px;color:var(--muted);margin:0 0 3px 2px;display:block}
+  .card{border:1px solid var(--line);border-radius:10px;padding:11px;margin-bottom:11px;background:#fdfcfa}
+  .card.cat{background:#faf7f0}
+  .card-h{display:flex;align-items:center;gap:6px;margin-bottom:9px}
+  .card-h .grip{color:var(--muted);font-size:13px}
+  .card-h .ttl{flex:1;font-size:12px;color:var(--muted)}
+  .ctrls{display:flex;gap:4px}
+  .item{border:1px dashed var(--line);border-radius:8px;padding:8px;margin:7px 0;background:#fff}
+  .col-pick{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+  .col-pick button{border:none;border-radius:0;padding:3px 9px;font-size:12px}
+  .col-pick button.on{background:var(--accent);color:#fff}
+  .addbtn{width:100%;border-style:dashed;color:var(--muted);margin-top:2px}
+  .hint{font-size:11px;color:var(--muted);line-height:1.6;margin:4px 2px}
+  .price-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+  /* ---------- PRINT PAGE ---------- */
+  .page{width:297mm;height:210mm;background:#fff;color:#111;position:relative;
+        box-shadow:0 8px 34px rgba(0,0,0,.18);flex:0 0 auto}
+  .page-inner{position:absolute;inset:0;padding:14mm 16mm}
+
+  /* front */
+  .m-head{margin-bottom:5mm}
+  .m-month{font-family:"Pinyon Script",cursive;font-size:60pt;line-height:.9;color:#111}
+  .m-year{font-size:16.2pt;letter-spacing:.15em;color:#333;margin-top:1mm}
+  .page-inner.front-inner{display:flex;flex-direction:column}
+  .front-cols{display:grid;grid-template-columns:1fr 1fr;gap:10mm;flex:1;min-height:0}
+  .fcol{display:flex;flex-direction:column;min-height:0}
+  .fcol .cats-mid{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
+  .cat-block{margin-bottom:7mm;break-inside:avoid}
+  .cat-title{display:flex;align-items:baseline;gap:4mm;margin-bottom:2.5mm}
+  .cat-title .ja{font-weight:600;font-size:15pt}
+  .cat-title .en{font-family:"Cormorant Garamond",serif;font-size:14pt;letter-spacing:.06em;font-weight:500}
+  .d-item{display:flex;justify-content:space-between;align-items:baseline;gap:6mm;margin:1.6mm 0}
+  .d-item .nm{font-size:9.5pt;font-weight:400}
+  .d-item .desc{font-size:7.5pt;color:#555;margin-top:.4mm}
+  .d-price{display:flex;gap:6mm;white-space:nowrap;font-size:9pt;font-variant-numeric:tabular-nums}
+  .d-price span{min-width:15mm;text-align:right;display:inline-block}
+  .d-price .empty{color:transparent}
+  .footnote{position:absolute;left:13mm;right:calc(50% + 19mm);bottom:6mm;text-align:center;
+            font-size:9pt;color:#2a2a2a;line-height:1.65;white-space:pre-line}
+  .fcol-left{transform:translateX(-3mm)}
+  .fcol-right{transform:translateX(3mm)}
+
+  /* 二つ折りガイド（画面のみ・印刷されない） */
+  .fold-line{position:absolute;top:0;bottom:0;left:50%;border-left:1px dashed #d5cfc3;z-index:5;pointer-events:none}
+  .fold-tag{position:absolute;top:2.5mm;left:50%;transform:translateX(-50%);font-size:7px;letter-spacing:.18em;
+            color:#b3ac9e;background:#fff;padding:1px 6px;border-radius:7px;z-index:6}
+
+  /* back（二つ折り外側：左=FOOD/裏表紙、右=ロゴ/表表紙） */
+  .back-fold{display:grid;grid-template-columns:1fr 1fr;height:100%}
+  .page-inner.fold{padding:14mm 0}
+  .panel{position:relative;height:100%}
+  .panel-left{padding:0 14mm;display:flex;flex-direction:column;justify-content:center}
+  .panel-left .food-title{font-family:"Cormorant Garamond",serif;font-size:30pt;font-weight:500;
+            letter-spacing:.05em;text-align:center;margin:1mm 0 5mm}
+  .food-list{text-align:center}
+  .food-item{margin:3.1mm 0}
+  .food-item .nm{font-weight:600;font-size:10.5pt}
+  .food-item .desc{font-size:8pt;color:#555;margin-top:.4mm}
+  .food-item .pr{font-size:10pt;margin-top:.5mm;font-variant-numeric:tabular-nums}
+  .panel-foot{position:absolute;left:14mm;right:14mm;bottom:1mm;text-align:center;
+            font-size:9.5pt;color:#222;line-height:1.7;white-space:pre-line}
+  .bcover{position:relative;padding:8mm 14mm}
+  .cover-center{position:absolute;width:100%;left:50%;top:50%;transform:translate(-50%,-50%);
+            display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 14mm}
+  .bcover img{max-height:120mm;object-fit:contain}
+  .bcover img.clogo{max-width:60%}
+  .cover-sub{font-size:11pt;letter-spacing:.45em;color:#1a1a1a;margin-top:1mm}
+  .cover-photo{position:absolute;transform:translate(-50%,-50%);max-height:80mm;object-fit:contain;z-index:1}
+  .cover-charge{position:absolute;left:14mm;right:14mm;bottom:1mm;text-align:center;
+            font-size:9pt;color:#222;line-height:1.6;white-space:normal}
+  .bcover .txtlogo{text-align:center}
+  .bcover .txtlogo .mn{font-family:"Cormorant Garamond",serif;font-weight:600;font-size:36pt;letter-spacing:.05em}
+  .bcover .txtlogo .sb{font-size:10pt;letter-spacing:.55em;color:#333;margin-top:2mm}
+  .page-tag{position:absolute;top:-22px;left:0;font-size:11px;color:#5c564c;letter-spacing:.08em}
+
+  /* ---------- モバイルタブ（狭い画面のみ表示） ---------- */
+  .mtabs{display:none}
+
+  @media (max-width:820px){
+    body{height:100vh}
+    .topbar{gap:6px;padding:8px 10px;row-gap:6px}
+    .brand{font-size:16px}
+    .brand small{display:none}
+    .save-flag{display:none}
+    .topbar button{padding:6px 9px;font-size:12px}
+    .storebox{order:5;width:100%}
+    .storebox select{flex:1;min-width:0}
+    .topbar .spacer{display:none}
+
+    .mtabs{display:flex;gap:6px;padding:6px 10px;background:var(--panel);border-bottom:1px solid var(--line)}
+    .mtabs button{flex:1;padding:10px;font-size:14px;border-radius:9px}
+    .mtabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+    .main{flex-direction:column}
+    .editor{width:100%;max-width:100%;min-width:0;border-right:none;flex:1;min-height:0;padding:14px}
+    .preview-wrap{width:100%;flex:1;min-height:0;padding:12px}
+    .row{flex-direction:column;gap:8px}
+    .row .f[style*="max-width"]{max-width:100%!important}
+
+    /* タブで表示を切替 */
+    body:not(.mview) .preview-wrap{display:none}
+    body.mview .editor{display:none}
+    body.mview .preview-wrap{display:flex}
+    /* 指でつまんで拡大できるように */
+    .preview-wrap{touch-action:pinch-zoom}
+  }
+
+  @media print{
+    @page{size:A4 landscape;margin:0}
+    html,body{height:auto;overflow:visible;background:#fff}
+    .topbar,.editor,.no-print{display:none!important}
+    .main,.preview-wrap{display:block;padding:0;overflow:visible;background:#fff;height:auto}
+    .page{box-shadow:none;margin:0;page-break-after:always;break-after:page}
+    .page:last-child{page-break-after:auto}
+    .page-tag{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar no-print">
+  <div class="brand">GIORNO<small>季節メニュー メーカー</small></div>
+  <div class="storebox">
+    <span class="lbl" style="margin:0">店舗</span>
+    <select id="storeSel"></select>
+    <button class="mini" id="addStore">＋店舗</button>
+    <button class="mini" id="renStore">名称変更</button>
+    <button class="mini danger" id="delStore">削除</button>
+  </div>
+  <div class="spacer"></div>
+  <button id="undoBtn" title="直前の変更を取り消す" disabled>↩ 元に戻す</button>
+  <span class="save-flag" id="saveFlag">自動保存 済</span>
+  <button id="loadBtn">📂 ファイル読込</button>
+  <button id="saveBtn">💾 ファイル保存</button>
+  <button class="primary" id="printBtn">🖨 印刷 / PDF</button>
+  <input type="file" id="fileInput" accept="application/json" style="display:none">
+</div>
+
+<div class="mtabs no-print">
+  <button id="mtabEdit" class="on">✏️ 編集</button>
+  <button id="mtabView">👁 プレビュー</button>
+</div>
+
+<div class="main">
+  <div class="editor no-print" id="editor"></div>
+  <div class="preview-wrap" id="preview"></div>
+</div>
+
+<script>
+/* =========================================================
+   状態管理
+========================================================= */
+const LS_KEY = "giorno_menu_maker_v1";
+const uid = () => Math.random().toString(36).slice(2,9);
+
+function katamachiSeed(){
+  const cat = (ja,en,col,items)=>({id:uid(),fruitJa:ja,fruitEn:en,col,
+     items:items.map(i=>({id:uid(),name:i[0],desc:i[1]||"",c:i[2]||"",m:i[3]||""}))});
+  return {
+    meta:{month:"January", year:"2026", cLabel:"C", mLabel:"M"},
+    front:{
+      categories:[
+        cat("苺","STRAWBERRY",1,[["THE いちご","","1,500","1,300"],["苺マティーニ","","1,700",""],["いちごパンナコッタ","","1,700","1,600"]]),
+        cat("金柑","KINKAN",1,[["金柑スカッシュ","","1,400","1,300"],["金柑と貴醸酒","","1,500",""]]),
+        cat("洋梨","PEAR",1,[["洋梨ブランデー","","1,600","1,400"],["洋梨アマレット","","1,600","1,400"],["洋梨GIN","","1,500",""],["洋梨パンナコッタ","","1,600","1,500"]]),
+        cat("柘榴","POMEGRANATE",1,[["ざくろコアントロー","","1,600",""],["柘榴ブランデー","","1,600",""],["柘榴スパークリング","","1,500","1,400"],["ざくろのモクテル","","","1,300"]]),
+        cat("林檎","APPLE",2,[["THE りんご","","1,500","1,300"],["キャラメルと林檎","","1,500","1,300"],["燻製アップルトニック","","1,400","1,300"]]),
+        cat("栗","CHESTNUT",2,[["栗ナッツミルク","","1,500","1,300"]]),
+        cat("混","MIX",2,[["フルーツポンチ","","1,700","1,500"],["フルーツティー","","1,700","1,500"],["ミックスジュース","","1,700","1,500"]]),
+        cat("ホットチョコレート","HOT CHOCOLAT",2,[["チョコレート","","1,400","1,300"],["オランジェット","","1,500","1,400"],["バナナ","","1,500","1,400"]]),
+      ],
+      footnote:"C はカクテル、M はモクテル（ノンアル）の税込価格です。\nアレルギーをお持ちのお客様はお知らせください。"
+    },
+    back:{
+      heading:"FOOD",
+      logoMain:"GIORNO", logoSub:"ジョルノ", photo:"", logoScale:60, photoScale:55, photoX:50, photoY:60, logoX:50, logoY:50,
+      items:[
+        {id:uid(),name:"白トリュフ香るミックスナッツ",desc:"",price:"900"},
+        {id:uid(),name:"ハモンセラーノ（生ハム）",desc:"",price:"1,500"},
+        {id:uid(),name:"福地鶏のソーセージ",desc:"",price:"1,500"},
+        {id:uid(),name:"オリーブ",desc:"",price:"600"},
+        {id:uid(),name:"絶品カルボナーラ",desc:"",price:"1,500"},
+        {id:uid(),name:"ジョルノのミートソース",desc:"",price:"1,500"},
+        {id:uid(),name:"ふわふわティラミス",desc:"",price:"1,100"},
+        {id:uid(),name:"ショコラテリーヌ",desc:"",price:"600"},
+        {id:uid(),name:"季節のミニパフェ（フルーツはスタッフまで）",desc:"",price:"1,400〜"},
+        {id:uid(),name:"季節限定 モンブラン",desc:"",price:"1,100"},
+      ],
+      illus:"",
+      note:"混雑時はお時間をいただきます。ご了承ください。",
+      charge:"テーブルチャージとしてお一人様につき\n25:00まで ¥1,200、25:00より ¥1,300 を頂戴いたします。"
+    }
+  };
+}
+
+let state = load() || { current:"片町店", stores:{ "片町店": katamachiSeed() } };
+
+function load(){ try{return JSON.parse(localStorage.getItem(LS_KEY))}catch(e){return null} }
+function persist(){
+  localStorage.setItem(LS_KEY, JSON.stringify(state));
+  const f=document.getElementById("saveFlag"); f.textContent="自動保存 済 ✓";
+  clearTimeout(persist._t); persist._t=setTimeout(()=>f.textContent="自動保存 済",1200);
+}
+const cur = () => state.stores[state.current];
+
+/* =========================================================
+   描画：エディタ
+========================================================= */
+function renderEditor(){
+  const s = cur();
+  const el = document.getElementById("editor");
+  el.innerHTML = `
+   <div class="sec">
+     <div class="sec-h"><h3>基本情報</h3><span class="ln"></span></div>
+     <div class="row">
+       <div class="f"><span class="lbl">月（英語）— 選択 or 自由入力</span>
+         <select id="mMonthSel">
+           <option value="">▼ リストから選択</option>
+           ${["January","February","March","April","May","June","July","August","September","October","November","December"].map(m=>`<option ${s.meta.month===m?'selected':''}>${m}</option>`).join("")}
+           <option value="__custom">その他（自由入力）</option>
+         </select>
+         <input id="mMonth" value="${esc(s.meta.month)}" placeholder="自由入力可（例: Spring）" style="margin-top:6px">
+       </div>
+       <div class="f" style="max-width:90px"><span class="lbl">年</span><input id="mYear" value="${esc(s.meta.year)}"></div>
+     </div>
+     <div class="row">
+       <div class="f"><span class="lbl">価格ラベル左</span><input id="cLabel" value="${esc(s.meta.cLabel)}"></div>
+       <div class="f"><span class="lbl">価格ラベル右</span><input id="mLabel" value="${esc(s.meta.mLabel)}"></div>
+     </div>
+   </div>
+
+   <div class="sec">
+     <div class="sec-h"><h3>表面：ドリンク（果物カテゴリ）</h3><span class="ln"></span></div>
+     <div class="collabel">◀ 左列</div>
+     <div id="catsLeft"></div>
+     <button class="addbtn" id="addCatL">＋ 左列にカテゴリを追加</button>
+     <div class="collabel">右列 ▶</div>
+     <div id="catsRight"></div>
+     <button class="addbtn" id="addCatR">＋ 右列にカテゴリを追加</button>
+     <div class="row" style="margin-top:12px"><div class="f"><span class="lbl">表面 脚注</span>
+       <textarea id="footnote">${esc(s.front.footnote)}</textarea></div></div>
+   </div>
+
+   <div class="sec">
+     <div class="sec-h"><h3>裏面：フード</h3><span class="ln"></span></div>
+     <div class="row">
+       <div class="f"><span class="lbl">見出し</span><input id="bHeading" value="${esc(s.back.heading)}"></div>
+       <div class="f"><span class="lbl">ロゴ英字</span><input id="bLogoMain" value="${esc(s.back.logoMain)}"></div>
+       <div class="f" style="max-width:110px"><span class="lbl">ロゴ日本語</span><input id="bLogoSub" value="${esc(s.back.logoSub)}"></div>
+     </div>
+     <div id="foods"></div>
+     <button class="addbtn" id="addFood">＋ フードを追加</button>
+     <div class="row" style="margin-top:12px"><div class="f"><span class="lbl">ロゴ（画像 or テキスト）— 大きさ・位置を調整</span>
+       <input type="file" id="illusFile" accept="image/*">
+       ${s.back.illus?`<button class="mini danger" id="illusClear" style="margin-top:6px">ロゴ画像を削除（テキストに戻す）</button>`:''}
+       <div class="rangerow"><span class="lbl" style="margin:0;min-width:34px">大きさ</span><input type="range" id="logoScale" min="20" max="100" value="${s.back.logoScale||60}"><span class="rv" id="logoScaleV">${s.back.logoScale||60}%</span></div>
+       <div class="rangerow"><span class="lbl" style="margin:0;min-width:34px">上下</span><input type="range" id="logoY" min="8" max="90" value="${s.back.logoY==null?(s.back.coverPos==='top'?20:50):s.back.logoY}"><span class="rv" id="logoYV">${s.back.logoY==null?(s.back.coverPos==='top'?20:50):s.back.logoY}%</span></div>
+       <div class="rangerow"><span class="lbl" style="margin:0;min-width:34px">左右</span><input type="range" id="logoX" min="10" max="90" value="${s.back.logoX==null?50:s.back.logoX}"><span class="rv" id="logoXV">${s.back.logoX==null?50:s.back.logoX}%</span></div>
+       </div></div>
+     <div class="row"><div class="f"><span class="lbl">その他画像（空きスペースに配置・任意）</span>
+       <input type="file" id="photoFile" accept="image/*">
+       ${s.back.photo?`
+       <div class="rangerow"><span class="lbl" style="margin:0;min-width:34px">大きさ</span><input type="range" id="photoScale" min="15" max="100" value="${s.back.photoScale||55}"><span class="rv" id="photoScaleV">${s.back.photoScale||55}%</span></div>
+       <div class="rangerow"><span class="lbl" style="margin:0;min-width:34px">上下</span><input type="range" id="photoY" min="25" max="90" value="${s.back.photoY==null?60:s.back.photoY}"><span class="rv" id="photoYV">${s.back.photoY==null?60:s.back.photoY}%</span></div>
+       <div class="rangerow"><span class="lbl" style="margin:0;min-width:34px">左右</span><input type="range" id="photoX" min="10" max="90" value="${s.back.photoX==null?50:s.back.photoX}"><span class="rv" id="photoXV">${s.back.photoX==null?50:s.back.photoX}%</span></div>
+       <button class="mini danger" id="photoClear">画像を削除</button>`:''}</div></div>
+     <div class="row"><div class="f"><span class="lbl">裏面 注記</span><textarea id="bNote">${esc(s.back.note)}</textarea></div></div>
+     <div class="row"><div class="f"><span class="lbl">テーブルチャージ</span><textarea id="bCharge">${esc(s.back.charge)}</textarea></div></div>
+   </div>
+   <div class="hint">💡 入力は自動でプレビューに反映され、この端末に自動保存されます。<br>
+   別端末やバックアップ用に「💾 ファイル保存」でJSON書き出し → 「📂 ファイル読込」で復元できます。</div>
+  `;
+
+  // categories
+  const catsL = el.querySelector("#catsLeft");
+  const catsR = el.querySelector("#catsRight");
+  const colIdx={1:[],2:[]};
+  s.front.categories.forEach((c,ci)=>{ (c.col===2?colIdx[2]:colIdx[1]).push(ci); });
+  s.front.categories.forEach((c,ci)=>{
+    const col=c.col===2?2:1;
+    const within=colIdx[col].indexOf(ci);
+    const isFirst=within===0, isLast=within===colIdx[col].length-1;
+    const d=document.createElement("div"); d.className="card cat";
+    d.innerHTML=`
+      <div class="card-h">
+        <span class="ttl">カテゴリ ${within+1}</span>
+        <div class="col-pick" title="どちらの列に表示するか">
+          <button data-col="1" class="${c.col===1?'on':''}">左列</button>
+          <button data-col="2" class="${c.col===2?'on':''}">右列</button>
+        </div>
+        <div class="ctrls">
+          <button class="mini" data-mv="-1" ${isFirst?'disabled':''}>▲</button>
+          <button class="mini" data-mv="1" ${isLast?'disabled':''}>▼</button>
+          <button class="mini danger" data-delcat>✕</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="f"><span class="lbl">果物名（日本語）</span><input class="fJa" value="${esc(c.fruitJa)}"></div>
+        <div class="f"><span class="lbl">英語表記</span><input class="fEn" value="${esc(c.fruitEn)}"></div>
+      </div>
+      <div class="items"></div>
+      <button class="addbtn addItem">＋ ドリンクを追加</button>`;
+    // wire
+    d.querySelectorAll('.col-pick button').forEach(b=>b.onclick=()=>{pushUndo();c.col=+b.dataset.col;renderEditor();renderPreview();persist();});
+    d.querySelector('[data-mv="-1"]').onclick=()=>moveCat(ci,-1);
+    d.querySelector('[data-mv="1"]').onclick=()=>moveCat(ci,1);
+    d.querySelector('[data-delcat]').onclick=()=>{if(confirm(`カテゴリ「${c.fruitJa}」を削除しますか？`)){pushUndo();s.front.categories.splice(ci,1);renderEditor();renderPreview();persist();}};
+    d.querySelector('.fJa').oninput=e=>{c.fruitJa=e.target.value;renderPreview();persist();};
+    d.querySelector('.fEn').oninput=e=>{c.fruitEn=e.target.value;renderPreview();persist();};
+    d.querySelector('.addItem').onclick=()=>{pushUndo();c.items.push({id:uid(),name:"",desc:"",c:"",m:""});renderEditor();renderPreview();persist();};
+    // items
+    const ib=d.querySelector('.items');
+    c.items.forEach((it,ii)=>{
+      const iv=document.createElement('div'); iv.className='item';
+      iv.innerHTML=`
+        <div class="card-h">
+          <span class="ttl">${ii+1}</span>
+          <div class="ctrls">
+            <button class="mini" data-i="-1" ${ii===0?'disabled':''}>▲</button>
+            <button class="mini" data-i="1" ${ii===c.items.length-1?'disabled':''}>▼</button>
+            <button class="mini danger" data-di>✕</button>
+          </div>
+        </div>
+        <input class="inm" placeholder="メニュー名" value="${esc(it.name)}">
+        <input class="ids" placeholder="説明（任意）" value="${esc(it.desc)}" style="margin-top:6px">
+        <div class="price-grid" style="margin-top:6px">
+          <input class="ic" placeholder="${esc(s.meta.cLabel)} 価格" value="${esc(it.c)}">
+          <input class="im" placeholder="${esc(s.meta.mLabel)} 価格" value="${esc(it.m)}">
+        </div>`;
+      iv.querySelector('[data-i="-1"]').onclick=()=>moveItem(c,ii,-1);
+      iv.querySelector('[data-i="1"]').onclick=()=>moveItem(c,ii,1);
+      iv.querySelector('[data-di]').onclick=()=>{pushUndo();c.items.splice(ii,1);renderEditor();renderPreview();persist();};
+      iv.querySelector('.inm').oninput=e=>{it.name=e.target.value;renderPreview();persist();};
+      iv.querySelector('.ids').oninput=e=>{it.desc=e.target.value;renderPreview();persist();};
+      iv.querySelector('.ic').oninput=e=>{it.c=e.target.value;renderPreview();persist();};
+      iv.querySelector('.im').oninput=e=>{it.m=e.target.value;renderPreview();persist();};
+      ib.appendChild(iv);
+    });
+    (col===1?catsL:catsR).appendChild(d);
+  });
+
+  // foods
+  const foods=el.querySelector("#foods");
+  s.back.items.forEach((f,fi)=>{
+    const fv=document.createElement('div'); fv.className='item';
+    fv.innerHTML=`
+      <div class="card-h"><span class="ttl">${fi+1}</span>
+        <div class="ctrls">
+          <button class="mini" data-f="-1" ${fi===0?'disabled':''}>▲</button>
+          <button class="mini" data-f="1" ${fi===s.back.items.length-1?'disabled':''}>▼</button>
+          <button class="mini danger" data-df>✕</button>
+        </div></div>
+      <div class="row" style="margin:0">
+        <div class="f" style="flex:2"><input class="fn" placeholder="料理名" value="${esc(f.name)}"></div>
+        <div class="f" style="flex:1"><input class="fp" placeholder="価格" value="${esc(f.price)}"></div>
+      </div>
+      <input class="fd" placeholder="説明（任意）" value="${esc(f.desc)}" style="margin-top:6px">`;
+    fv.querySelector('[data-f="-1"]').onclick=()=>moveFood(fi,-1);
+    fv.querySelector('[data-f="1"]').onclick=()=>moveFood(fi,1);
+    fv.querySelector('[data-df]').onclick=()=>{pushUndo();s.back.items.splice(fi,1);renderEditor();renderPreview();persist();};
+    fv.querySelector('.fn').oninput=e=>{f.name=e.target.value;renderPreview();persist();};
+    fv.querySelector('.fp').oninput=e=>{f.price=e.target.value;renderPreview();persist();};
+    fv.querySelector('.fd').oninput=e=>{f.desc=e.target.value;renderPreview();persist();};
+    foods.appendChild(fv);
+  });
+
+  // top-level fields
+  bind("#mMonth","meta.month"); bind("#mYear","meta.year");
+  bind("#cLabel","meta.cLabel",true); bind("#mLabel","meta.mLabel",true);
+  bind("#footnote","front.footnote");
+  bind("#bHeading","back.heading"); bind("#bLogoMain","back.logoMain"); bind("#bLogoSub","back.logoSub");
+  bind("#bNote","back.note"); bind("#bCharge","back.charge");
+  const addCatTo=(col)=>{pushUndo();s.front.categories.push({id:uid(),fruitJa:"",fruitEn:"",col,items:[{id:uid(),name:"",desc:"",c:"",m:""}]});renderEditor();renderPreview();persist();};
+  el.querySelector("#addCatL").onclick=()=>addCatTo(1);
+  el.querySelector("#addCatR").onclick=()=>addCatTo(2);
+  el.querySelector("#addFood").onclick=()=>{pushUndo();s.back.items.push({id:uid(),name:"",desc:"",price:""});renderEditor();renderPreview();persist();};
+  el.querySelector("#illusFile").onchange=onIllus;
+  const ic=el.querySelector("#illusClear"); if(ic) ic.onclick=()=>{pushUndo();s.back.illus="";renderEditor();renderPreview();persist();};
+  el.querySelector("#photoFile").onchange=onPhoto;
+  const pc=el.querySelector("#photoClear"); if(pc) pc.onclick=()=>{pushUndo();s.back.photo="";renderEditor();renderPreview();persist();};
+  const lsz=el.querySelector("#logoScale");
+  if(lsz) lsz.oninput=e=>{s.back.logoScale=+e.target.value;el.querySelector("#logoScaleV").textContent=e.target.value+"%";renderPreview();persist();};
+  const lyz=el.querySelector("#logoY");
+  if(lyz) lyz.oninput=e=>{s.back.logoY=+e.target.value;el.querySelector("#logoYV").textContent=e.target.value+"%";renderPreview();persist();};
+  const lxz=el.querySelector("#logoX");
+  if(lxz) lxz.oninput=e=>{s.back.logoX=+e.target.value;el.querySelector("#logoXV").textContent=e.target.value+"%";renderPreview();persist();};
+  const psz=el.querySelector("#photoScale");
+  if(psz) psz.oninput=e=>{s.back.photoScale=+e.target.value;el.querySelector("#photoScaleV").textContent=e.target.value+"%";renderPreview();persist();};
+  const pyz=el.querySelector("#photoY");
+  if(pyz) pyz.oninput=e=>{s.back.photoY=+e.target.value;el.querySelector("#photoYV").textContent=e.target.value+"%";renderPreview();persist();};
+  const pxz=el.querySelector("#photoX");
+  if(pxz) pxz.oninput=e=>{s.back.photoX=+e.target.value;el.querySelector("#photoXV").textContent=e.target.value+"%";renderPreview();persist();};
+  // 月：リスト選択 → 自由入力欄へ反映
+  const msel=el.querySelector("#mMonthSel");
+  if(msel) msel.onchange=e=>{
+    const v=e.target.value;
+    if(v==='__custom'){ el.querySelector('#mMonth').focus(); return; }
+    if(v){ pushUndo(); s.meta.month=v; el.querySelector('#mMonth').value=v; renderPreview(); persist(); }
+  };
+}
+
+function bind(sel,path,relabel){
+  const node=document.querySelector(sel); if(!node)return;
+  node.oninput=e=>{ setPath(cur(),path,e.target.value); renderPreview(); persist();
+    if(relabel){ /* labels shown in placeholders update on next structural render */ } };
+}
+function setPath(o,path,v){const p=path.split('.');let t=o;for(let i=0;i<p.length-1;i++)t=t[p[i]];t[p[p.length-1]]=v;}
+
+function moveCat(i,dir){ // 同じ列の中で並び替え
+  const a=cur().front.categories; const col=a[i].col===2?2:1;
+  let j=i+dir; while(j>=0&&j<a.length){ if((a[j].col===2?2:1)===col) break; j+=dir; }
+  if(j<0||j>=a.length)return;
+  pushUndo();[a[i],a[j]]=[a[j],a[i]];renderEditor();renderPreview();persist();}
+function moveItem(c,i,dir){const j=i+dir;if(j<0||j>=c.items.length)return;pushUndo();[c.items[i],c.items[j]]=[c.items[j],c.items[i]];renderEditor();renderPreview();persist();}
+function moveFood(i,dir){const a=cur().back.items;const j=i+dir;if(j<0||j>=a.length)return;pushUndo();[a[i],a[j]]=[a[j],a[i]];renderEditor();renderPreview();persist();}
+
+function onIllus(e){
+  const file=e.target.files[0]; if(!file)return;
+  const r=new FileReader();
+  r.onload=()=>{pushUndo();cur().back.illus=r.result;renderEditor();renderPreview();persist();};
+  r.readAsDataURL(file);
+}
+function onPhoto(e){
+  const file=e.target.files[0]; if(!file)return;
+  const r=new FileReader();
+  r.onload=()=>{pushUndo();const b=cur().back;b.photo=r.result;
+    if(b.photoX==null)b.photoX=50; if(b.photoY==null)b.photoY=60; /* 空きスペース中央に初期配置 */
+    if(b.logoY==null||b.logoY===50)b.logoY=20; /* ロゴは自動で上へ */
+    renderEditor();renderPreview();persist();};
+  r.readAsDataURL(file);
+}
+
+/* =========================================================
+   描画：プレビュー（A4横 表裏）
+========================================================= */
+function renderPreview(){
+  const s=cur();
+  const col=(n)=> s.front.categories.filter(c=>c.col===n).map(catHTML).join("");
+  const priceCell=(v)=> v? `<span>${esc(v)}</span>` : `<span class="empty">-</span>`;
+  function catHTML(c){
+    const items=c.items.map(it=>`
+      <div class="d-item">
+        <div><div class="nm">${esc(it.name)}</div>${it.desc?`<div class="desc">${esc(it.desc)}</div>`:''}</div>
+        <div class="d-price">${it.c?`<span>${esc(s.meta.cLabel)} ${esc(it.c)}</span>`:priceCell('')}${it.m?`<span>${esc(s.meta.mLabel)} ${esc(it.m)}</span>`:priceCell('')}</div>
+      </div>`).join("");
+    return `<div class="cat-block"><div class="cat-title"><span class="ja">${esc(c.fruitJa)}</span><span class="en">${esc(c.fruitEn)}</span></div>${items}</div>`;
+  }
+  const foods=s.back.items.map(f=>`
+    <div class="food-item"><div class="nm">${esc(f.name)}</div>${f.desc?`<div class="desc">${esc(f.desc)}</div>`:''}<div class="pr">${esc(f.price)}</div></div>`).join("");
+
+  const front=`
+   <div class="page"><span class="page-tag no-print">表面（内側・二つ折り）</span>
+     <div class="fold-line no-print"></div><div class="fold-tag no-print">折り線</div>
+     <div class="page-inner front-inner">
+       <div class="front-cols">
+         <div class="fcol fcol-left">
+           <div class="m-head"><div class="m-month">${esc(s.meta.month)}</div><div class="m-year">${esc(s.meta.year)}</div></div>
+           <div class="cats-mid">${col(1)}</div>
+         </div>
+         <div class="fcol fcol-right">
+           <div class="cats-mid">${col(2)}</div>
+         </div>
+       </div>
+       <div class="footnote">${esc(s.front.footnote)}</div>
+     </div>
+   </div>`;
+
+  const ls=s.back.logoScale||60, ps=s.back.photoScale||55;
+  const px=(s.back.photoX==null?50:s.back.photoX), py=(s.back.photoY==null?60:s.back.photoY);
+  const lx=(s.back.logoX==null?50:s.back.logoX);
+  const ly=(s.back.logoY==null?(s.back.coverPos==='top'?20:50):s.back.logoY);
+  const photoTag = s.back.photo ? `<img class="cover-photo" src="${s.back.photo}" style="left:${px}%;top:${py}%;max-width:${ps}%">` : '';
+  const coverInner = s.back.illus
+     ? `<img class="clogo" src="${s.back.illus}" style="max-width:${ls}%"><div class="cover-sub">${esc(s.back.logoSub)}</div>`
+     : `<div class="txtlogo"><div class="mn">${esc(s.back.logoMain)}</div><div class="sb">${esc(s.back.logoSub)}</div></div>`;
+  const back=`
+   <div class="page"><span class="page-tag no-print">裏面（外側・二つ折り）　左＝FOOD／右＝表紙</span>
+     <div class="fold-line no-print"></div><div class="fold-tag no-print">折り線</div>
+     <div class="page-inner fold">
+       <div class="back-fold">
+         <div class="panel panel-left">
+           <div class="food-title">${esc(s.back.heading)}</div>
+           <div class="food-list">${foods}</div>
+           <div class="panel-foot">${esc(s.back.note)}</div>
+         </div>
+         <div class="panel bcover">
+           <div class="cover-center" style="left:${lx}%;top:${ly}%">${coverInner}</div>
+           ${photoTag}
+           <div class="cover-charge">${esc(s.back.charge)}</div>
+         </div>
+       </div>
+     </div>
+   </div>`;
+
+  const wrap=document.getElementById("preview");
+  wrap.innerHTML=front+back;
+  fitScale();
+}
+
+/* プレビューを枠に合わせて縮小 */
+function fitScale(){
+  const wrap=document.getElementById("preview");
+  if(!wrap.clientWidth) return; // 非表示中はスキップ
+  const pages=wrap.querySelectorAll(".page");
+  const cs=getComputedStyle(wrap);
+  const pad=parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight);
+  const avail=wrap.clientWidth-pad-4;
+  const pageW=297*3.7795; // mm->px
+  const scale=Math.min(1, avail/pageW);
+  pages.forEach(p=>{ p.style.transform=`scale(${scale})`; p.style.transformOrigin="top center";
+    p.style.marginBottom=(210*3.7795*scale - 210*3.7795 + 26)+"px"; });
+}
+window.addEventListener("resize",fitScale);
+
+/* =========================================================
+   店舗・入出力
+========================================================= */
+function renderStores(){
+  const sel=document.getElementById("storeSel");
+  sel.innerHTML=Object.keys(state.stores).map(n=>`<option ${n===state.current?'selected':''}>${esc(n)}</option>`).join("");
+}
+document.getElementById("storeSel").onchange=e=>{state.current=e.target.value;renderEditor();renderPreview();persist();};
+document.getElementById("addStore").onclick=()=>{
+  const n=prompt("新しい店舗名を入力","");if(!n)return;
+  if(state.stores[n]){alert("同名の店舗があります");return;}
+  pushUndo();
+  if(confirm("片町店の内容をコピーして作成しますか？（キャンセルで空から作成）"))
+     state.stores[n]=JSON.parse(JSON.stringify(cur()));
+  else state.stores[n]=emptyStore();
+  state.current=n;renderStores();renderEditor();renderPreview();persist();
+};
+document.getElementById("renStore").onclick=()=>{
+  const n=prompt("店舗名を変更",state.current);if(!n||n===state.current)return;
+  if(state.stores[n]){alert("同名の店舗があります");return;}
+  pushUndo();
+  state.stores[n]=state.stores[state.current];delete state.stores[state.current];
+  state.current=n;renderStores();persist();
+};
+document.getElementById("delStore").onclick=()=>{
+  if(Object.keys(state.stores).length<=1){alert("最後の1店舗は削除できません");return;}
+  if(!confirm(`店舗「${state.current}」を削除しますか？`))return;
+  pushUndo();
+  delete state.stores[state.current];state.current=Object.keys(state.stores)[0];
+  renderStores();renderEditor();renderPreview();persist();
+};
+function emptyStore(){return{meta:{month:"",year:"2026",cLabel:"C",mLabel:"M"},
+  front:{categories:[{id:uid(),fruitJa:"",fruitEn:"",col:1,items:[{id:uid(),name:"",desc:"",c:"",m:""}]}],footnote:""},
+  back:{heading:"FOOD",logoMain:"GIORNO",logoSub:"ジョルノ",photo:"",logoScale:60,photoScale:55,photoX:50,photoY:60,logoX:50,logoY:50,items:[{id:uid(),name:"",desc:"",price:""}],illus:"",note:"",charge:""}};}
+
+document.getElementById("saveBtn").onclick=()=>{
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download=`GIORNO_メニュー_${new Date().toISOString().slice(0,10)}.json`;a.click();
+};
+document.getElementById("loadBtn").onclick=()=>document.getElementById("fileInput").click();
+document.getElementById("fileInput").onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);
+    if(!d.stores||!d.current)throw 0;
+    state=d;renderStores();renderEditor();renderPreview();persist();
+    alert("読み込みました");}catch(x){alert("読み込めませんでした（ファイル形式が違います）");}};
+  r.readAsText(f);e.target.value="";
+};
+document.getElementById("printBtn").onclick=()=>window.print();
+
+/* モバイル：編集 / プレビュー タブ切替 */
+(function(){
+  const mE=document.getElementById('mtabEdit'), mV=document.getElementById('mtabView');
+  if(!mE||!mV)return;
+  mE.onclick=()=>{document.body.classList.remove('mview');mE.classList.add('on');mV.classList.remove('on');};
+  mV.onclick=()=>{document.body.classList.add('mview');mV.classList.add('on');mE.classList.remove('on');requestAnimationFrame(fitScale);};
+})();
+
+/* util */
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+
+/* =========================================================
+   元に戻す（undo）
+========================================================= */
+let undoStack=[];
+function snapshot(){return JSON.stringify({current:state.current,stores:state.stores});}
+function pushUndo(){
+  const snap=snapshot();
+  if(undoStack.length && undoStack[undoStack.length-1]===snap) return; // 変化なしはスキップ
+  undoStack.push(snap);
+  if(undoStack.length>100) undoStack.shift();
+  updateUndoBtn();
+}
+function updateUndoBtn(){ const b=document.getElementById('undoBtn'); if(b) b.disabled=undoStack.length===0; }
+function doUndo(){
+  if(!undoStack.length) return;
+  const prev=JSON.parse(undoStack.pop());
+  state.current=prev.current; state.stores=prev.stores;
+  renderStores(); renderEditor(); renderPreview();
+  localStorage.setItem(LS_KEY, JSON.stringify(state));
+  updateUndoBtn();
+}
+document.getElementById('undoBtn').onclick=doUndo;
+// テキスト入力は、フィールドにフォーカスした時点を1手として記録
+document.getElementById('editor').addEventListener('focusin', e=>{
+  if(e.target.matches('input, textarea, select')) pushUndo();
+});
+
+/* init */
+renderStores(); renderEditor(); renderPreview(); updateUndoBtn();
+</script>
+</body>
+</html>
