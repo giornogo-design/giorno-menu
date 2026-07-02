@@ -166,16 +166,33 @@
     .preview-wrap{touch-action:pan-y pinch-zoom;-webkit-overflow-scrolling:touch}
   }
 
+  /* ===== 刻（TOKI）テンプレ：A4縦・1枚 ===== */
+  .page.portrait{width:210mm;height:297mm}
+  .toki-inner{position:absolute;inset:0;padding:22mm 20mm 18mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .toki-logo{margin-top:2mm}
+  .toki-logo img{max-width:80%;object-fit:contain}
+  .toki-title-main{font-family:"Cormorant Garamond",serif;font-size:19pt;letter-spacing:.24em;margin-top:10mm;font-weight:500}
+  .toki-title-sub{font-size:12pt;letter-spacing:.12em;margin-top:3mm}
+  .toki-items{width:100%;max-width:160mm;margin:16mm auto 0}
+  .toki-item{display:grid;grid-template-columns:32mm 1fr auto;align-items:baseline;gap:5mm;margin:7mm 0}
+  .toki-item .tja{font-size:11pt;text-align:left;letter-spacing:.05em}
+  .toki-item .ten{font-family:"Cormorant Garamond",serif;font-size:11pt;text-align:left;letter-spacing:.03em}
+  .toki-item .tpr{font-size:11pt;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .toki-desc{margin-top:18mm;font-size:9.5pt;line-height:2.05;white-space:pre-line}
+  .toki-desc-en{font-family:"Cormorant Garamond",serif;font-size:9.5pt;color:#333;line-height:1.9;margin-top:7mm;white-space:pre-line}
+  .toki-foot{position:absolute;left:20mm;right:20mm;bottom:14mm;font-size:8.5pt;color:#222;line-height:1.75;white-space:pre-line}
+  .toki-foot .en{font-family:"Cormorant Garamond",serif;color:#444}
+
   @media print{
-    @page{size:A4 landscape;margin:0}
     html,body{height:auto;overflow:visible;background:#fff}
-    .topbar,.editor,.no-print{display:none!important}
+    .topbar,.mtabs,.editor,.no-print{display:none!important}
     .main,.preview-wrap{display:block;padding:0;overflow:visible;background:#fff;height:auto}
-    .page{box-shadow:none;margin:0;page-break-after:always;break-after:page}
+    .page{box-shadow:none;margin:0!important;transform:none!important;page-break-after:always;break-after:page}
     .page:last-child{page-break-after:auto}
     .page-tag{display:none}
   }
 </style>
+<style id="pageSizeStyle">@page{size:A4 landscape;margin:0}</style>
 </head>
 <body>
 
@@ -220,6 +237,7 @@ function katamachiSeed(){
   const cat = (ja,en,col,items)=>({id:uid(),fruitJa:ja,fruitEn:en,col,
      items:items.map(i=>({id:uid(),name:i[0],desc:i[1]||"",c:i[2]||"",m:i[3]||""}))});
   return {
+    template:"katamachi",
     meta:{month:"January", year:"2026", cLabel:"C", mLabel:"M"},
     front:{
       categories:[
@@ -256,6 +274,28 @@ function katamachiSeed(){
   };
 }
 
+/* 刻（TOKI）テンプレの初期データ */
+function tokiSeed(){
+  const it=(ja,en,price)=>({id:uid(),ja,en,price});
+  return {
+    template:"toki",
+    toki:{
+      logo:"", logoScale:40,
+      titleMain:"ESHIKOTO",
+      titleSub:"刻　樽熟　　TOKI Barrel Aged",
+      items:[
+        it("刻　さくら","TOKI　Sakura (Cherry Wood)","3,300"),
+        it("刻　くり","TOKI　Kuri (Chestnut Wood)","3,300"),
+        it("刻　なら","TOKI　Nara (Oak Wood)","3,300"),
+      ],
+      descJa:"黒龍酒造の新たな試みとして誕生したブランド「ESHIKOTO」の限定酒。\n酒粕から丁寧に蒸留したスピリッツを\n福井県産の\"さくら\"、\"くり\"、\"なら\"の木をあしらった洋樽で熟成させました。",
+      descEn:"A limited release from ESHIKOTO, a brand born from KOKURYU Shuzo's new initiative.\nThis spirit is carefully distilled from sake lees,\nthen matured in oak barrels crafted from Fukui-grown cherry, chestnut, and oak woods.",
+      footJa:"すべて税込価格です。別途サービス料として 10% を頂戴いたします。",
+      footEn:"All prices include tax. A 10% service charge will be added."
+    }
+  };
+}
+
 let state = load() || { current:"片町店", stores:{ "片町店": katamachiSeed() } };
 
 function load(){ try{return JSON.parse(localStorage.getItem(LS_KEY))}catch(e){return null} }
@@ -271,6 +311,7 @@ const cur = () => state.stores[state.current];
 ========================================================= */
 function renderEditor(){
   const s = cur();
+  if((s.template||"katamachi")==="toki"){ renderEditorToki(s); return; }
   const el = document.getElementById("editor");
   el.innerHTML = `
    <div class="sec">
@@ -498,6 +539,9 @@ function onPhoto(e){
 ========================================================= */
 function renderPreview(){
   const s=cur();
+  const isToki=(s.template||"katamachi")==="toki";
+  document.getElementById('pageSizeStyle').textContent='@page{size:A4 '+(isToki?'portrait':'landscape')+';margin:0}';
+  if(isToki){ renderPreviewToki(s); return; }
   const col=(n)=> s.front.categories.filter(c=>c.col===n).map(catHTML).join("");
   const priceCell=(v)=> v? `<span>${esc(v)}</span>` : `<span class="empty">-</span>`;
   function catHTML(c){
@@ -560,6 +604,85 @@ function renderPreview(){
   fitScale();
 }
 
+/* ===== 刻（TOKI）テンプレ ===== */
+function renderPreviewToki(s){
+  const t=s.toki;
+  const items=t.items.map(it=>`
+    <div class="toki-item"><div class="tja">${esc(it.ja)}</div><div class="ten">${esc(it.en)}</div><div class="tpr">${esc(it.price)}</div></div>`).join("");
+  const logo = t.logo ? `<div class="toki-logo"><img src="${t.logo}" style="max-height:${t.logoScale||40}mm"></div>` : "";
+  const page=`
+   <div class="page portrait"><span class="page-tag no-print">刻メニュー（A4縦・1枚）</span>
+     <div class="toki-inner">
+       ${logo}
+       <div class="toki-title-main">${esc(t.titleMain)}</div>
+       <div class="toki-title-sub">${esc(t.titleSub)}</div>
+       <div class="toki-items">${items}</div>
+       <div class="toki-desc">${esc(t.descJa)}</div>
+       <div class="toki-desc-en">${esc(t.descEn)}</div>
+       <div class="toki-foot">${esc(t.footJa)}<br><span class="en">${esc(t.footEn)}</span></div>
+     </div>
+   </div>`;
+  const wrap=document.getElementById("preview");
+  wrap.innerHTML=page;
+  fitScale();
+}
+
+function renderEditorToki(s){
+  const t=s.toki;
+  const el=document.getElementById("editor");
+  el.innerHTML=`
+   <div class="sec">
+     <div class="sec-h"><h3>刻（TOKI）メニュー ・ A4縦</h3><span class="ln"></span></div>
+     <div class="row"><div class="f"><span class="lbl">ロゴ画像（Bar TOKI）</span>
+       <input type="file" id="tLogoFile" accept="image/*">
+       ${t.logo?`<div class="rangerow"><span class="lbl" style="margin:0;min-width:34px">大きさ</span><input type="range" id="tLogoScale" min="15" max="90" value="${t.logoScale||40}"><span class="rv" id="tLogoScaleV">${t.logoScale||40}mm</span></div><button class="mini danger" id="tLogoClear">ロゴを削除</button>`:''}
+     </div></div>
+     <div class="row"><div class="f"><span class="lbl">タイトル（英字）</span><input id="tTitleMain" value="${esc(t.titleMain)}"></div></div>
+     <div class="row"><div class="f"><span class="lbl">サブタイトル</span><input id="tTitleSub" value="${esc(t.titleSub)}"></div></div>
+   </div>
+   <div class="sec">
+     <div class="sec-h"><h3>品目</h3><span class="ln"></span></div>
+     <div id="tItems"></div>
+     <button class="addbtn" id="tAddItem">＋ 品目を追加</button>
+   </div>
+   <div class="sec">
+     <div class="sec-h"><h3>説明・脚注</h3><span class="ln"></span></div>
+     <div class="row"><div class="f"><span class="lbl">説明（日本語）</span><textarea id="tDescJa">${esc(t.descJa)}</textarea></div></div>
+     <div class="row"><div class="f"><span class="lbl">説明（英語）</span><textarea id="tDescEn">${esc(t.descEn)}</textarea></div></div>
+     <div class="row"><div class="f"><span class="lbl">脚注（日本語）</span><input id="tFootJa" value="${esc(t.footJa)}"></div></div>
+     <div class="row"><div class="f"><span class="lbl">脚注（英語）</span><input id="tFootEn" value="${esc(t.footEn)}"></div></div>
+   </div>
+   <div class="hint">💡 変更は自動保存。印刷はA4縦で出力されます。ロゴを入れると上部中央に表示されます。</div>`;
+  const box=el.querySelector("#tItems");
+  t.items.forEach((it,ii)=>{
+    const d=document.createElement("div"); d.className="item";
+    d.innerHTML=`
+      <div class="card-h"><span class="ttl">${ii+1}</span>
+        <div class="ctrls">
+          <button class="mini" data-u ${ii===0?'disabled':''}>▲</button>
+          <button class="mini" data-d ${ii===t.items.length-1?'disabled':''}>▼</button>
+          <button class="mini danger" data-x>✕</button>
+        </div></div>
+      <input class="tj" placeholder="和名（例: 刻　さくら）" value="${esc(it.ja)}">
+      <input class="te" placeholder="英名（例: TOKI Sakura (Cherry Wood)）" value="${esc(it.en)}" style="margin-top:6px">
+      <input class="tp" placeholder="価格" value="${esc(it.price)}" style="margin-top:6px">`;
+    d.querySelector('[data-u]').onclick=()=>{if(ii>0){pushUndo();[t.items[ii-1],t.items[ii]]=[t.items[ii],t.items[ii-1]];renderEditor();renderPreview();persist();}};
+    d.querySelector('[data-d]').onclick=()=>{if(ii<t.items.length-1){pushUndo();[t.items[ii+1],t.items[ii]]=[t.items[ii],t.items[ii+1]];renderEditor();renderPreview();persist();}};
+    d.querySelector('[data-x]').onclick=()=>{pushUndo();t.items.splice(ii,1);renderEditor();renderPreview();persist();};
+    d.querySelector('.tj').oninput=e=>{it.ja=e.target.value;renderPreview();persist();};
+    d.querySelector('.te').oninput=e=>{it.en=e.target.value;renderPreview();persist();};
+    d.querySelector('.tp').oninput=e=>{it.price=e.target.value;renderPreview();persist();};
+    box.appendChild(d);
+  });
+  el.querySelector("#tAddItem").onclick=()=>{pushUndo();t.items.push({id:uid(),ja:"",en:"",price:""});renderEditor();renderPreview();persist();};
+  el.querySelector("#tLogoFile").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{pushUndo();t.logo=r.result;renderEditor();renderPreview();persist();};r.readAsDataURL(f);};
+  const lc=el.querySelector("#tLogoClear"); if(lc) lc.onclick=()=>{pushUndo();t.logo="";renderEditor();renderPreview();persist();};
+  const lsz=el.querySelector("#tLogoScale"); if(lsz) lsz.oninput=e=>{t.logoScale=+e.target.value;el.querySelector("#tLogoScaleV").textContent=e.target.value+"mm";renderPreview();persist();};
+  bind("#tTitleMain","toki.titleMain"); bind("#tTitleSub","toki.titleSub");
+  bind("#tDescJa","toki.descJa"); bind("#tDescEn","toki.descEn");
+  bind("#tFootJa","toki.footJa"); bind("#tFootEn","toki.footEn");
+}
+
 /* プレビューを枠に合わせて縮小 */
 function fitScale(){
   const wrap=document.getElementById("preview");
@@ -568,10 +691,12 @@ function fitScale(){
   const cs=getComputedStyle(wrap);
   const pad=parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight);
   const avail=wrap.clientWidth-pad-4;
-  const pageW=297*3.7795; // mm->px
-  const scale=Math.min(1, avail/pageW);
-  pages.forEach(p=>{ p.style.transform=`scale(${scale})`; p.style.transformOrigin="top center";
-    p.style.marginBottom=(210*3.7795*scale - 210*3.7795 + 26)+"px"; });
+  pages.forEach(p=>{ // 用紙サイズ（縦/横）ごとに自動で縮尺
+    p.style.transform="none";
+    const w=p.offsetWidth, h=p.offsetHeight;
+    const scale=Math.min(1, avail/w);
+    p.style.transform=`scale(${scale})`; p.style.transformOrigin="top center";
+    p.style.marginBottom=(h*scale - h + 26)+"px"; });
 }
 window.addEventListener("resize",fitScale);
 
@@ -586,9 +711,12 @@ document.getElementById("storeSel").onchange=e=>{state.current=e.target.value;re
 document.getElementById("addStore").onclick=()=>{
   const n=prompt("新しい店舗名を入力","");if(!n)return;
   if(state.stores[n]){alert("同名の店舗があります");return;}
+  const t=prompt("デザインを選んでください：\n1 = 片町型（A4横・果物カクテル）\n2 = 刻型（A4縦・樽熟酒）\n\n番号を入力","1");
+  if(t===null)return;
   pushUndo();
-  if(confirm("片町店の内容をコピーして作成しますか？（キャンセルで空から作成）"))
-     state.stores[n]=JSON.parse(JSON.stringify(cur()));
+  if(t.trim()==="2"){ state.stores[n]=tokiSeed(); }
+  else if(confirm("片町店の内容をコピーして作成しますか？（キャンセルで空から作成）"))
+     state.stores[n]=JSON.parse(JSON.stringify(state.stores["片町店"]||katamachiSeed()));
   else state.stores[n]=emptyStore();
   state.current=n;renderStores();renderEditor();renderPreview();persist();
 };
@@ -667,7 +795,10 @@ document.getElementById('editor').addEventListener('focusin', e=>{
 
 /* init */
 /* 既定ロゴを全端末に適用（空のstoreにDEFAULT_LOGOを1度だけ） */
-Object.values(state.stores).forEach(st=>{ if(st.back){ if(!st.back.logoSeeded && !st.back.illus){ st.back.illus=DEFAULT_LOGO; } st.back.logoSeeded=true; } });
+Object.values(state.stores).forEach(st=>{ if(!st.template) st.template='katamachi'; if(st.back){ if(!st.back.logoSeeded && !st.back.illus){ st.back.illus=DEFAULT_LOGO; } st.back.logoSeeded=true; } });
+/* 刻メニューを全端末に1度だけ追加（削除後は復活しない） */
+if(!state.tokiSeeded && !state.stores['刻']){ state.stores['刻']=tokiSeed(); }
+state.tokiSeeded=true;
 persist();
 renderStores(); renderEditor(); renderPreview(); updateUndoBtn();
 </script>
