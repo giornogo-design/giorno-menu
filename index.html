@@ -162,8 +162,8 @@
     body:not(.mview) .preview-wrap{display:none}
     body.mview .editor{display:none}
     body.mview .preview-wrap{display:flex}
-    /* 指でつまんで拡大できるように */
-    .preview-wrap{touch-action:pinch-zoom}
+    /* スワイプで縦スクロール＋ピンチ拡大の両方を許可 */
+    .preview-wrap{touch-action:pan-y pinch-zoom;-webkit-overflow-scrolling:touch}
   }
 
   @media print{
