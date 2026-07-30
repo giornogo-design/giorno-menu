@@ -258,7 +258,7 @@
   .ek-pg-3 .ek-srow{margin-top:1.4mm;margin-bottom:1.4mm}
 
   /* ===== 駅前店（昼 / HIRU）：A4縦・ek系セクション流用 ===== */
-  .hiru-inner{position:absolute;inset:0;padding:15mm 24mm 15mm;display:flex;flex-direction:column}
+  .hiru-inner{position:absolute;inset:0;padding:50mm 24mm 15mm;display:flex;flex-direction:column}
   .hiru-logo{text-align:center;margin-bottom:6mm}
   .hiru-logo img{max-width:48%;object-fit:contain}
   .hiru-sub{text-align:center;font-size:11pt;letter-spacing:.3em;color:#555;margin:-4mm 0 7mm}
@@ -613,7 +613,7 @@ function hiruSeed(){
     template:"hiru",
     hiru:{
       logo:DEFAULT_EKIMAE_LOGO, logoScale:52, logoSeeded:true,
-      sub:"Lunch & Cafe",
+      sub:"Cafe",
       foot:"当店はセット制です。単品でのご注文は承っておりません。\n表示はセットの「メイン」価格です。チャージ無し・税込。",
       pages:[
         // P1 STEP① メインを選ぶ
@@ -1586,6 +1586,8 @@ if(!state.hiruSeeded && !state.stores['駅前店（昼）']){ state.stores['駅�
 state.hiruSeeded=true;
 /* 駅前店（昼）にセット欄を含む版へ全端末で1度だけ更新 */
 if(!state.hiruV4Seeded){ if(state.stores['駅前店（昼）'] && state.stores['駅前店（昼）'].template==='hiru'){ state.stores['駅前店（昼）']=hiruSeed(); } state.hiruV4Seeded=true; }
+/* 駅前店（昼）のサブタイトルを全端末で1度だけ更新 */
+if(!state.hiruV5Seeded){ if(state.stores['駅前店（昼）'] && state.stores['駅前店（昼）'].template==='hiru'){ state.stores['駅前店（昼）'].hiru.sub="Cafe"; } state.hiruV5Seeded=true; }
 /* 刻ロゴを全端末に1度だけ適用 */
 Object.values(state.stores).forEach(st=>{ if(st.template==='toki' && st.toki){ if(!st.toki.logoSeeded && !st.toki.logo){ st.toki.logo=DEFAULT_TOKI_LOGO; } st.toki.logoSeeded=true; } });
 persist();
