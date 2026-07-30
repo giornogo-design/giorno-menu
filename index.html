@@ -264,6 +264,7 @@
   .hiru-sub{text-align:center;font-size:11pt;letter-spacing:.3em;color:#555;margin:-4mm 0 7mm}
   .hiru-lead{text-align:center;font-size:11pt;letter-spacing:.06em;color:var(--accent-d);
         border-top:1px solid var(--accent);border-bottom:1px solid var(--accent);padding:3mm 0;margin:0 0 8mm}
+  .hiru-pg-0 .hiru-lead{color:#5A4A3F}
   .hiru-secs{flex:1;min-height:0}
   /* A4はA5より広いので本文を少し大きく */
   .hiru-secs .ek-h-main{font-size:15pt;margin:1mm 0 4mm}
@@ -1342,7 +1343,7 @@ function renderPreviewHiru(s){
   const pages = h.pages.map((p,pi)=>{
     const secs=(p.sections||[]).map(ekSectionHTML).join("");
     const lead = p.lead ? `<div class="hiru-lead">${esc(p.lead)}</div>` : "";
-    return `<div class="page portrait"><span class="page-tag no-print">駅前(昼) P${pi+1}</span>
+    return `<div class="page portrait hiru-pg-${pi}"><span class="page-tag no-print">駅前(昼) P${pi+1}</span>
       <div class="hiru-inner">
         ${pi===0?logo+sub:""}
         ${lead}
