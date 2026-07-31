@@ -143,7 +143,9 @@
   /* ---------- モバイルタブ（狭い画面のみ表示） ---------- */
   .mtabs{display:none}
 
-  @media (max-width:820px){
+  /* 画面のみ。印刷時は用紙幅(A4縦=794px/Letter=816px)がここに一致してしまい
+     モバイル用の display:none や padding が印刷に漏れるため screen に限定する */
+  @media screen and (max-width:820px){
     body{height:100vh}
     .topbar{gap:6px;padding:8px 10px;row-gap:6px}
     .brand{font-size:16px}
@@ -286,18 +288,70 @@
   .hiru-foot{position:absolute;left:24mm;right:24mm;bottom:12mm;text-align:center;font-size:9pt;color:#333;line-height:1.7;white-space:pre-line}
 
   @media print{
-    html,body{height:auto;overflow:visible;background:#fff}
+    /* 画面用レイアウト（flex/固定高/スクロール）を完全に解除して通常フローへ戻す。
+       body が flex のままだと .main が flex アイテムとして高さ0に潰れ、
+       2ページ目以降が組版フローに乗らない */
+    html,body{display:block!important;height:auto!important;min-height:0!important;
+              margin:0!important;padding:0!important;overflow:visible!important;background:#fff}
     .topbar,.mtabs,.editor,.no-print{display:none!important}
-    .main,.preview-wrap{display:block;padding:0;overflow:visible;background:#fff;height:auto}
-    .page{box-shadow:none;margin:0!important;transform:none!important;page-break-after:always;break-after:page}
-    .page:last-child{page-break-after:auto}
-    .page-tag{display:none}
+    .main,.preview-wrap{display:block!important;flex:none!important;
+              width:auto!important;max-width:none!important;min-width:0!important;
+              height:auto!important;min-height:0!important;
+              margin:0!important;padding:0!important;gap:0!important;
+              overflow:visible!important;background:#fff}
+    .ek-spreads,.ek-reads{margin:0;padding:0}
+
+    /* 用紙1枚＝.page 1個。プレビュー用の縮小(transform)と間隔(margin)は必ず無効化 */
+    .page{box-shadow:none!important;
+          margin:0!important;padding:0!important;
+          transform:none!important;transform-origin:0 0!important;zoom:normal!important;
+          overflow:hidden;
+          page-break-after:always;break-after:page;
+          page-break-inside:avoid;break-inside:avoid}
+    .page:last-child{page-break-after:auto;break-after:auto}
+    .page-tag{display:none!important}
+
+    /* 背景・罫線・網掛けをブラウザに間引かせない（Safari/AirPrintで色が飛ぶのを防ぐ） */
+    *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+
     /* 駅前店：校正表示中でも印刷は必ず面付けスプレッドを出す */
     .ek-spreads{display:block!important}
     .ek-reads{display:none!important}
   }
+
+  /* ---------- PDF書き出し中の一時状態（画面には出さない） ----------
+     用紙1枚を等倍・影なし・ガイドなしで写し取るための状態。
+     印刷用@media printと同じ「見え方」をPDF側でも再現する */
+  body.exporting .no-print{display:none!important}
+  body.exporting .page{box-shadow:none!important;transform:none!important;margin:0!important}
+  body.exporting .ek-spreads{display:block!important}
+  body.exporting .ek-reads{display:none!important}
+  /* スマホで「編集」タブを開いたままでも書き出せるように、
+     書き出し中だけプレビューを必ず組み立てる（表示はveilで覆われて見えない）。
+     これが無いと .preview-wrap が display:none のままで0ページになる */
+  body.exporting .preview-wrap{display:flex!important}
+  body.exporting .editor{display:none!important}
+
+  /* PDF生成中のオーバーレイ */
+  .pdf-veil{position:fixed;inset:0;background:rgba(26,26,26,.55);z-index:9999;
+            display:flex;align-items:center;justify-content:center}
+  .pdf-veil .box{background:#fff;border-radius:12px;padding:22px 28px;text-align:center;
+            min-width:260px;box-shadow:0 12px 40px rgba(0,0,0,.3)}
+  .pdf-veil .box{max-width:min(92vw,420px)}
+  .pdf-veil .ttl{font-size:15px;margin-bottom:10px}
+  .pdf-veil .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+  .pdf-veil .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+  .pdf-veil .sub{font-size:12px;color:var(--muted);margin-top:9px}
+  /* 進捗ログ：iPhoneでもどの段階で止まったか画面だけで分かるようにする */
+  .pdf-veil .log{margin-top:10px;text-align:left;font-size:11px;line-height:1.65;color:var(--muted);
+            max-height:34vh;overflow:auto;background:#fbfaf7;border:1px solid var(--line);
+            border-radius:8px;padding:8px 10px;white-space:pre-wrap;word-break:break-word}
+  .pdf-veil .log b{color:var(--ink);font-weight:600}
+  .pdf-veil .log .ng{color:var(--danger);font-weight:600}
+  .pdf-veil .acts{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+  .pdf-veil .acts button{width:100%;padding:12px;font-size:14px;border-radius:9px}
 </style>
-<style id="pageSizeStyle">@page{size:A4 landscape;margin:0}</style>
+<style id="pageSizeStyle">@page{size:297mm 210mm;margin:0}</style>
 </head>
 <body>
 
@@ -315,7 +369,8 @@
   <span class="save-flag" id="saveFlag">自動保存 済</span>
   <button id="loadBtn">📂 ファイル読込</button>
   <button id="saveBtn">💾 ファイル保存</button>
-  <button class="primary" id="printBtn">🖨 印刷 / PDF</button>
+  <button class="primary" id="pdfBtn" title="用紙設定に左右されないA4 PDFを作ります（推奨）">📄 PDF保存</button>
+  <button id="printBtn" title="ブラウザの印刷機能を使います">🖨 印刷</button>
   <input type="file" id="fileInput" accept="application/json" style="display:none">
 </div>
 
@@ -919,7 +974,7 @@ function renderPreview(){
   if(s.template==="ekimae"){ renderPreviewEkimae(s); return; }
   if(s.template==="hiru"){ renderPreviewHiru(s); return; }
   const isToki=(s.template||"katamachi")==="toki";
-  document.getElementById('pageSizeStyle').textContent='@page{size:A4 '+(isToki?'portrait':'landscape')+';margin:0}';
+  document.getElementById('pageSizeStyle').textContent=pageSizeCSS(isToki?'portrait':'landscape');
   if(isToki){ renderPreviewToki(s); return; }
   const col=(n)=> s.front.categories.filter(c=>c.col===n).map(catHTML).join("");
   const priceCell=(v)=> v? `<span>${esc(v)}</span>` : `<span class="empty">-</span>`;
@@ -1187,7 +1242,7 @@ function ekInnerHTML(p, day, charge, idx){
 }
 function renderPreviewEkimae(s){
   const e=s.ekimae;
-  document.getElementById('pageSizeStyle').textContent='@page{size:A4 landscape;margin:0}';
+  document.getElementById('pageSizeStyle').textContent=pageSizeCSS('landscape');
   const day = e.mode==="day";
   const inner=(i)=>ekInnerHTML(e.pages[i], day, e.charge, i);
   const LBL=["表紙","摘む(カクテル)","スイーツ+ドリンク","アルコール+ソフト","ワイン","ウイスキー等","フード","白紙"];
@@ -1343,7 +1398,7 @@ function renderEditorEkimae(s){
 /* ===== 駅前店（昼 / HIRU）テンプレ：A4縦・ek系セクション流用 ===== */
 function renderPreviewHiru(s){
   const h=s.hiru;
-  document.getElementById('pageSizeStyle').textContent='@page{size:A4 portrait;margin:0}';
+  document.getElementById('pageSizeStyle').textContent=pageSizeCSS('portrait');
   const logo = h.logo ? `<div class="hiru-logo"><img src="${h.logo}" style="max-width:${h.logoScale||52}%"></div>` : "";
   const sub = h.sub ? `<div class="hiru-sub">${esc(h.sub)}</div>` : "";
   const foot = (h.foot!=null && h.foot!=="") ? `<div class="hiru-foot">${esc(h.foot)}</div>` : "";
@@ -1460,8 +1515,16 @@ function renderEditorHiru(s){
   el.querySelector("#hAddPage").onclick=()=>{pushUndo();h.pages.push({id:uid(),sections:[{id:uid(),heading:"",headingEn:"",sub:false,layout:"single",priceHeads:[],note:"",items:[{id:uid(),name:"",p1:"",p2:""}]}]});renderEditor();renderPreview();persist();};
 }
 
-/* プレビューを枠に合わせて縮小 */
+var printing=false;   // 印刷組版中フラグ（宣言前参照を避けるため関数定義より前に置く）
+
+/* 用紙サイズ。A4のキーワード＋orientationはSafariが解釈しない場合があるため実寸mmで指定 */
+function pageSizeCSS(orient){
+  return '@page{size:'+(orient==='portrait'?'210mm 297mm':'297mm 210mm')+';margin:0}';
+}
+
+/* プレビューを枠に合わせて縮小（画面表示専用。印刷には一切効かせない） */
 function fitScale(){
+  if(printing) return;                       // 印刷組版中は縮小しない
   const wrap=document.getElementById("preview");
   if(!wrap.clientWidth) return; // 非表示中はスキップ
   const pages=wrap.querySelectorAll(".page");
@@ -1476,6 +1539,26 @@ function fitScale(){
     p.style.marginBottom=(h*scale - h + 26)+"px"; });
 }
 window.addEventListener("resize",fitScale);
+
+/* 印刷の直前にプレビュー用のインラインstyle（縮小・負マージン）を実体ごと外す。
+   @media print 側でも打ち消しているが、インラインstyleの扱いが
+   ブラウザ差になりやすいためDOMから消して同一条件にそろえる。
+   ※ページ分割はCSS(break-after)のみで行い、ここでは改ページに一切関与しない */
+function stripPreviewScale(){
+  printing=true;
+  document.querySelectorAll("#preview .page").forEach(p=>{
+    p.style.transform=""; p.style.transformOrigin=""; p.style.marginBottom="";
+  });
+}
+function restorePreviewScale(){ printing=false; fitScale(); }
+window.addEventListener("beforeprint",stripPreviewScale);
+window.addEventListener("afterprint",restorePreviewScale);
+/* Safari(特にiOS/AirPrint)は beforeprint を発火しないことがあるためMQでも拾う */
+if(window.matchMedia){
+  const mqp=window.matchMedia("print");
+  const onMq=e=>{ e.matches?stripPreviewScale():restorePreviewScale(); };
+  mqp.addEventListener ? mqp.addEventListener("change",onMq) : mqp.addListener(onMq);
+}
 
 /* =========================================================
    店舗・入出力
@@ -1532,7 +1615,227 @@ document.getElementById("fileInput").onchange=e=>{
     alert("読み込みました");}catch(x){alert("読み込めませんでした（ファイル形式が違います）");}};
   r.readAsText(f);e.target.value="";
 };
-document.getElementById("printBtn").onclick=()=>window.print();
+document.getElementById("printBtn").onclick=()=>{
+  // iOSのプリントはヘッダ/フッタも余白も消せない仕様のため、PDF保存へ誘導する
+  if(isiOS() && !confirm(
+      "iPhone・iPadのプリントでは、URL・日時・ページ番号が必ず入り、\n"+
+      "余白の分だけ版面がずれます（設定で消せません）。\n\n"+
+      "「📄 PDF保存」で作ったPDFを開いてからプリントすると、\n"+
+      "画面どおりのA4で印刷できます。\n\nこのまま印刷しますか？")) return;
+  window.print();
+};
+
+/* =========================================================
+   PDF書き出し（ブラウザの印刷機能を使わない経路）
+
+   なぜ必要か：
+     iOS Safari / AirPrint には「ヘッダとフッタを消す」設定も
+     「余白なし」設定も存在しない。Webページを直接印刷する限り
+       ・URL / 日時 / ページ番号 が必ず刷り込まれる
+       ・印刷可能領域が A4 より小さくなり 297mm 固定の .page がはみ出す
+     ため、CSSでは原理的に「プレビュー＝印刷」にできない。
+     そこでアプリ側でA4のPDFを組み立て、印刷ダイアログを経由させない。
+     出来上がったPDFをAirPrintすれば、余白もヘッダーも入らない。
+========================================================= */
+const PDF_LIBS=[ "./assets/vendor/html2canvas.min.js", "./assets/vendor/jspdf.umd.min.js" ];
+let pdfLibsReady=null;
+function loadPdfLibs(){
+  if(pdfLibsReady) return pdfLibsReady;
+  pdfLibsReady=PDF_LIBS.reduce((chain,src)=>chain.then(()=>new Promise((ok,ng)=>{
+    const s=document.createElement("script");
+    s.src=src; s.onload=ok; s.onerror=()=>ng(new Error("読み込み失敗: "+src));
+    document.head.appendChild(s);
+  })),Promise.resolve());
+  return pdfLibsReady;
+}
+
+/* Webフォントと画像の読み込み完了を待つ（未完了のまま写すと字形と位置がずれる） */
+async function waitForAssets(root){
+  if(document.fonts && document.fonts.ready){
+    try{ await document.fonts.ready; }catch(e){}
+    // 実際に使う書体が使用可能になるまで確認する
+    const faces=['400 10pt "Shippori Mincho"','500 10pt "Cormorant Garamond"','400 10pt "Pinyon Script"'];
+    try{ await Promise.all(faces.map(f=>document.fonts.load(f,"ジョルノAa1"))); }catch(e){}
+  }
+  const imgs=[...root.querySelectorAll("img")];
+  await Promise.all(imgs.map(im=>{
+    if(im.complete && im.naturalWidth) return Promise.resolve();
+    return new Promise(r=>{ im.addEventListener("load",r,{once:true});
+                            im.addEventListener("error",r,{once:true}); });
+  }));
+  // レイアウト確定を1フレーム待つ
+  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+}
+
+/* 進捗パネル。どの段階まで進んだかを画面に残す（iPhoneではconsoleが見られないため） */
+function veil(){
+  const d=document.createElement("div");
+  d.className="pdf-veil";
+  d.innerHTML=`<div class="box"><div class="ttl">PDFを作成しています…</div>
+    <div class="bar"><i></i></div><div class="sub"></div>
+    <div class="log"></div><div class="acts"></div></div>`;
+  document.body.appendChild(d);
+  const $=s=>d.querySelector(s);
+  const t0=Date.now();
+  let last="";
+  return {
+    el:d,
+    stage(txt){ last=txt;
+      $(".log").insertAdjacentHTML("beforeend",
+        `<div><b>${((Date.now()-t0)/1000).toFixed(1)}s</b> ${esc(txt)}</div>`);
+      $(".log").scrollTop=1e6; $(".sub").textContent=txt; },
+    current(){ return last; },
+    progress(n,total){ $("i").style.width=Math.round(n/Math.max(1,total)*100)+"%"; },
+    note(txt,ng){ $(".log").insertAdjacentHTML("beforeend",
+        `<div class="${ng?'ng':''}">${esc(txt)}</div>`); $(".log").scrollTop=1e6; },
+    title(txt){ $(".ttl").textContent=txt; },
+    actions(list){ const a=$(".acts"); a.innerHTML="";
+      list.forEach(([label,cls,fn])=>{ const b=document.createElement("button");
+        b.textContent=label; if(cls) b.className=cls; b.onclick=fn; a.appendChild(b); }); },
+    close(){ d.remove(); }
+  };
+}
+
+/* 関数宣言にして巻き上げる（印刷ボタンの定義より後ろに置いても参照できるように） */
+function isiOS(){
+  return /iP(hone|ad|od)/.test(navigator.userAgent) ||
+         (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+}
+
+/* 直前に作ったPDFのURL。早すぎる解放でプレビューが空になるのを防ぐため、
+   次回書き出し時またはパネルを閉じた時にだけ解放する */
+let lastPdfUrl=null;
+function releaseLastPdf(){ if(lastPdfUrl){ URL.revokeObjectURL(lastPdfUrl); lastPdfUrl=null; } }
+
+/* 検証用スイッチ（URLに付けるだけ・付けなければ既定の動作のまま）
+     ?pdfscale=2  … 解像度倍率を指定
+     ?pdfpages=1  … 先頭Nページだけ書き出して切り分ける
+   極端な値を入れても端末が固まらないよう上限で頭打ちにする */
+function pdfOpt(key,def,max){
+  const v=new URLSearchParams(location.search).get(key);
+  const n=v==null?NaN:parseInt(v,10);
+  if(!Number.isFinite(n)||n<=0) return def;
+  return max ? Math.min(n,max) : n;
+}
+
+let pdfBusy=false;   // 二重実行の防止
+
+async function exportPDF(){
+  if(pdfBusy) return;                       // 連打・二重起動を止める
+  pdfBusy=true;
+  const btn=document.getElementById("pdfBtn");
+  btn.disabled=true;
+  releaseLastPdf();
+  const v=veil();
+  let restored=false;
+  const restore=()=>{ if(restored) return; restored=true;
+    document.body.classList.remove("exporting"); restorePreviewScale(); };
+  try{
+    // iPhoneはメモリ制約が厳しくSafariに落とされやすいので既定を2倍にする（約190dpi）
+    const scale=pdfOpt("pdfscale", isiOS()?2:3, 4);   // 倍率は4倍まで
+    v.stage("部品を読み込み中");
+    await loadPdfLibs();
+    if(!window.html2canvas||!window.jspdf) throw new Error("PDF部品を読み込めませんでした");
+
+    v.stage("表示を等倍に調整中");
+    document.body.classList.add("exporting");   // 影・折り線ガイド・校正面を除去
+    stripPreviewScale();                        // 縮小(transform)を外して等倍(1:1)にする
+
+    const wrap=document.getElementById("preview");
+    v.stage("フォントと画像の読み込み待ち");
+    await waitForAssets(wrap);
+
+    // 実際に紙になる .page だけを対象にする（校正用の.ek-readsは矩形を持たない）
+    let pages=[...wrap.querySelectorAll(".page")].filter(p=>p.getClientRects().length);
+    if(!pages.length) throw new Error("出力するページがありません");
+    const limit=pdfOpt("pdfpages",0,99);
+    if(limit) pages=pages.slice(0,limit);
+    v.note(`対象 ${pages.length} ページ / 倍率 ${scale}倍`);
+
+    const { jsPDF }=window.jspdf;
+    let doc=null;
+
+    for(let i=0;i<pages.length;i++){
+      const pg=pages[i];
+      v.progress(i,pages.length);
+      v.stage(`${i+1} / ${pages.length} ページを描画中`);
+      const wmm = Math.round(pg.offsetWidth /(96/25.4));
+      const hmm = Math.round(pg.offsetHeight/(96/25.4));
+      // windowWidth は指定しない。用紙幅(794px)を渡すと複製側で
+      // screen and (max-width:820px) のモバイル指定が発火してレイアウトが崩れる
+      const canvas=await html2canvas(pg,{
+        scale, backgroundColor:"#ffffff", useCORS:true, logging:false,
+        width:pg.offsetWidth, height:pg.offsetHeight
+      });
+      let img=canvas.toDataURL("image/jpeg",0.92);
+      canvas.width=canvas.height=0;            // 1ページごとに確実に解放（iPhone対策）
+      const fmt=[wmm,hmm], ori=wmm>hmm?"landscape":"portrait";
+      if(!doc) doc=new jsPDF({orientation:ori,unit:"mm",format:fmt,compress:true});
+      else     doc.addPage(fmt,ori);
+      doc.addImage(img,"JPEG",0,0,wmm,hmm,undefined,"FAST");
+      img=null;
+      v.stage(`${i+1} ページ完了（${wmm}×${hmm}mm）`);
+      await new Promise(r=>setTimeout(r,0));   // 描画スレッドを解放して固まりを防ぐ
+    }
+
+    v.progress(pages.length,pages.length);
+    v.stage("PDFを組み立て中");
+    let blob=doc.output("blob");
+    if(blob.type!=="application/pdf") blob=new Blob([blob],{type:"application/pdf"});
+    const name=`GIORNO_${state.current}_${new Date().toISOString().slice(0,10)}.pdf`;
+    v.stage(`完成（${pages.length}ページ / ${(blob.size/1024/1024).toFixed(2)}MB）`);
+
+    // 画面を元に戻してから受け渡しUIを出す（この時点で処理は完全に終わっている）
+    restore();
+
+    lastPdfUrl=URL.createObjectURL(blob);
+    const file=new File([blob],name,{type:"application/pdf"});
+    const canShare = !!(navigator.canShare && navigator.share && navigator.canShare({files:[file]}));
+
+    v.title("PDFができました");
+    v.note(canShare ? "「共有・保存」からプリントできます"
+                    : "ボタンを押して保存してください");
+
+    /* iOS Safariは非同期処理のあとに勝手にタブを開けない。
+       ここから先は必ず利用者のタップ（新しい操作）を起点にする。 */
+    const acts=[];
+    if(canShare){
+      acts.push(["📤 共有・保存（プリントはここから）","primary",async()=>{
+        try{ await navigator.share({files:[file],title:name}); }
+        catch(e){ if(e && e.name!=="AbortError") v.note("共有できませんでした: "+e.message,true); }
+      }]);
+    }
+    acts.push([canShare?"⬇︎ ファイルに保存":"⬇︎ PDFを保存",canShare?"":"primary",()=>{
+      const a=document.createElement("a");
+      a.href=lastPdfUrl; a.download=name; a.rel="noopener";
+      document.body.appendChild(a); a.click(); a.remove();
+    }]);
+    acts.push(["🔍 別のタブで開く","",()=>{
+      const w=window.open(lastPdfUrl,"_blank");
+      if(!w) v.note("タブを開けませんでした。ポップアップ設定をご確認ください。",true);
+    }]);
+    acts.push(["閉じる","",()=>{ releaseLastPdf(); v.close(); }]);
+    v.actions(acts);
+
+    if(!isiOS()){   // パソコンは従来どおり即ダウンロード
+      const a=document.createElement("a");
+      a.href=lastPdfUrl; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+    }
+  }catch(err){
+    restore();
+    const msg=(err&&err.message)?err.message:String(err);
+    v.title("PDFを作成できませんでした");
+    v.note(`停止した段階：${v.current()}`,true);
+    v.note(`理由：${msg}`,true);
+    v.note("倍率を下げると通ることがあります。URLの末尾に ?pdfscale=2 を付けてお試しください。");
+    v.actions([["閉じる","primary",()=>{ releaseLastPdf(); v.close(); }]]);
+  }finally{
+    restore();
+    btn.disabled=false;
+    pdfBusy=false;
+  }
+}
+document.getElementById("pdfBtn").onclick=exportPDF;
 
 /* モバイル：編集 / プレビュー タブ切替 */
 (function(){
